@@ -1,4 +1,6 @@
+import asyncio
 from playwright.async_api import async_playwright, Page, Browser, BrowserContext
+from browser.cursor import inject_cursor, click_element
 
 
 class WebBrowser:
@@ -18,21 +20,32 @@ class WebBrowser:
     async def goto(self, url: str):
         """Navigate to a URL"""
         await self.page.goto(url)
+        await inject_cursor(self.page)
         return f"Navigated to {url}"
     
     async def click(self, selector: str):
         """Click on an element given a CSS selector"""
-        await self.page.click(selector)
-        return f"Clicked on element: {selector}"
+        element = await self.page.query_selector(selector)
+        if element:
+            box = await element.bounding_box()
+            if box:
+                await click_element(self.page, box['x'] + box['width']/2, box['y'] + box['height']/2)
+            await element.click()
+            return f"Clicked on element: {selector}"
+        else:
+            return f"Element not found: {selector}"
     
-    async def type(self, selector: str, text: str):
+    async def type(self, selector: str, text: str, delay: float = 0.015):
         """Type text into an input field"""
-        await self.page.fill(selector, text)
+        await self.page.fill(selector, "")
+        for char in text:
+            await self.page.type(selector, char, delay=int(delay * 1000))
         return f"Typed '{text}' into {selector}"
     
     async def scroll(self, x: int, y: int):
         """Scroll the page given coordinates"""
-        await self.page.evaluate(f"window.scrollBy({x}, {y})")
+        await self.page.evaluate(f"window.scrollBy({{ top: {y}, left: {x}, behavior: 'smooth' }});")
+        await asyncio.sleep((abs(max(x, y))) / 1000 + 0.3)
         return f"Scrolled by x:{x}, y:{y}"
     
     async def close(self):
