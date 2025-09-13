@@ -13,28 +13,37 @@ from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
 from pipecat.transports.network.small_webrtc import SmallWebRTCTransport
 
+from browser.browser import WebBrowser
+from custom.tools import get_tools_schema, get_tools_functions
+from custom.prompts import initial_url, system_prompt, connection_prompt
+
 
 load_dotenv()
 
 
 async def run_bot(transport: BaseTransport):
+    browser = WebBrowser()
+    await browser.initialize()
+    
     stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY"))
     
     tts = CartesiaTTSService(
         api_key=os.getenv("CARTESIA_API_KEY"),
-        voice_id="71a7ad14-091c-4e8e-a314-022ece01c121",
+        voice_id="6f84f4b8-58a2-430c-8c79-688dad597532",
+        model="sonic-2",
+        params=CartesiaTTSService.InputParams(
+            speed="fast"
+        )
     )
     
-    llm = OpenAILLMService(api_key=os.getenv("OPENAI_API_KEY"))
+    llm = OpenAILLMService(
+        api_key=os.getenv("OPENAI_API_KEY"),
+        model="gpt-4.1-mini",
+    )
     
-    messages = [
-        {
-            "role": "system",
-            "content": "You are a friendly AI assistant. Respond naturally and keep your answers conversational.",
-        },
-    ]
-    
-    context = OpenAILLMContext(messages)
+    messages = [{"role": "system", "content": system_prompt,},]
+    tools_schema = get_tools_schema(browser)
+    context = OpenAILLMContext(messages, tools=tools_schema)
     context_aggregator = llm.create_context_aggregator(context)
     
     pipeline = Pipeline([
@@ -49,13 +58,18 @@ async def run_bot(transport: BaseTransport):
     
     task = PipelineTask(pipeline, params=PipelineParams())
     
+    for tools_function in get_tools_functions(browser):
+        llm.register_direct_function(tools_function)
+
     @transport.event_handler("on_client_connected")
     async def on_client_connected(transport, client):
-        messages.append({"role": "system", "content": "Say hello and briefly introduce yourself."})
+        await browser.goto(initial_url)
+        messages.append({"role": "system", "content": connection_prompt})
         await task.queue_frames([LLMRunFrame()])
     
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):
+        await browser.close()
         await task.cancel()
     
     runner = PipelineRunner()
