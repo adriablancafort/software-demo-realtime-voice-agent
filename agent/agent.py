@@ -11,17 +11,17 @@ from pipecat.services.cartesia.tts import CartesiaTTSService
 from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.openai.llm import OpenAILLMService
 from pipecat.transports.base_transport import BaseTransport, TransportParams
-from pipecat.transports.network.small_webrtc import SmallWebRTCTransport
+from pipecat.transports.smallwebrtc.transport import SmallWebRTCTransport
 
 from browser.browser import WebBrowser
-from custom.tools import get_tools_schema, get_tools_functions
+from agent.tools import get_tools_schema, get_tools_functions
 from custom.prompts import initial_url, system_prompt, connection_prompt
 
 
 load_dotenv()
 
 
-async def run_bot(transport: BaseTransport):
+async def agent(transport: BaseTransport):
     browser = WebBrowser()
     await browser.initialize()
     
@@ -41,7 +41,7 @@ async def run_bot(transport: BaseTransport):
         model="gpt-4.1-mini",
     )
     
-    messages = [{"role": "system", "content": system_prompt,},]
+    messages = [{"role": "system", "content": system_prompt}]
     tools_schema = get_tools_schema(browser)
     context = OpenAILLMContext(messages, tools=tools_schema)
     context_aggregator = llm.create_context_aggregator(context)
@@ -86,9 +86,4 @@ async def bot(runner_args: RunnerArguments):
         webrtc_connection=runner_args.webrtc_connection,
     )
 
-    await run_bot(transport)
-
-
-if __name__ == "__main__":
-    from pipecat.runner.run import main
-    main()
+    await agent(transport)
