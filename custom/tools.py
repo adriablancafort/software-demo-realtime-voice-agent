@@ -63,9 +63,9 @@ def get_tools_functions(browser):
 
         ELEMENTS = {
             "settings_save_button": 'button:has-text("Save Changes")',
-            "settings_email_notifications_toggle": 'button[role="switch"]:near(:text("Email Notifications"))',
-            "settings_push_notifications_toggle": 'button[role="switch"]:near(:text("Push Notifications"))',
-            "settings_marketing_emails_toggle": 'button[role="switch"]:near(:text("Marketing Emails"))',
+            "settings_email_notifications_toggle": 'button[role="switch"]:right-of(:text("Email Notifications"))',
+            "settings_push_notifications_toggle": 'button[role="switch"]:right-of(:text("Push Notifications"))',
+            "settings_marketing_emails_toggle": 'button[role="switch"]:right-of(:text("Marketing Emails"))',
             "analytics_export_report_button": 'button:has-text("Export Report")',
         }
         
