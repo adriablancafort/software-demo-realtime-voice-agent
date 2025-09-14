@@ -38,7 +38,8 @@ async def agent(transport: BaseTransport):
     
     llm = OpenAILLMService(
         api_key=os.getenv("OPENAI_API_KEY"),
-        model="gpt-4.1-mini",
+        model="gpt-4.1",
+        run_in_parallel=False
     )
     
     messages = [{"role": "system", "content": system_prompt}]

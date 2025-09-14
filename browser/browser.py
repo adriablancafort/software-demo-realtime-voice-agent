@@ -38,8 +38,7 @@ class WebBrowser:
         element = await self.page.query_selector(selector)
         if element:
             await element.fill("")
-            for char in text:
-                await element.type(char, delay=int(delay * 1000))
+            await element.type(text, delay=int(delay * 1000))
         else:
             raise Exception(f"Element not found: {selector}")
     
